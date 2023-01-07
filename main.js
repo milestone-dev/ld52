@@ -7,12 +7,14 @@ var mainBud;
 var currentOrbit;
 const ENERGY_PER_CYCLE = 1;
 const trainButtonElm = document.querySelector("#train");
-const upgradeButtonElm = document.querySelector("#upgrade");
+const upgradeSpeedButtonElm = document.querySelector("#upgradeSpeed");
+const upgradeClickButtonElm = document.querySelector("#upgradeClick");
 const trainButtonLabelElm = document.querySelector("#train span");
-const upgradeButtonLabelElm = document.querySelector("#upgrade span");
+const upgradeSpeedButtonLabelElm = document.querySelector("#upgradeSpeed span");
+const upgradeClickButtonLabelElm = document.querySelector("#upgradeClick span");
 const cursorElm = document.querySelector("#cursor");
 const progressElm = document.querySelector("#progress");
-const BASE_ORBIT_SIZE = 256;
+const BASE_ORBIT_SIZE = 240;
 const BASE_ANIMATION_SPEED = 1.5;
 const ORBIT_SCALE = 0.7;
 const ORBIT_MAX_COUNT_MIN = 25;
@@ -20,10 +22,10 @@ const ORBIT_MAX_COUNT_SCALE = 1;
 const UNIVERSE_SCALE = 3;
 const LEAVING_TIME_MIN = 15;
 const LEAVING_TIME_MAX = 25;
-const TRAIN_COST = 1;
-const SPEED_COST = 2;
+const TRAIN_COST = 3;
+const SPEED_COST = 9;
 const SPEED_UPGRADE = 0.005;
-const BLOB_ENERGY_BASE = 22;
+const BLOB_ENERGY_BASE = 3;
 const BLOB_SPAWN_TIMER_MIN = 5000;
 const BLOB_SPAWN_TIMER_MAX = 30000;
 const BLOB_MAX_COUNT = 5;
@@ -31,10 +33,13 @@ const SHADE_DAMAGE = 50;
 const SHADE_BASE_HP = 50;
 const CLICK_ENERGY_BASE = 1;
 const CLICK_DAMAGE = 13;
+const CLICK_COST = 25;
+const CLICK_UPGRADE = 0.4;
 const SHADE_MAX_COUNT = 4;
 const SHADE_SPAWN_TIMER_MIN = 3000;
 const SHADE_SPAWN_TIMER_MAX = 6000;
 var speedUpgradeLevel = 1;
+var clickUpgradeLevel = 1;
 var shadesCreated = 0;
 var canSpawnShades = false;
 var mouseDown = false;
@@ -42,7 +47,7 @@ var mouseClick = false;
 var shiftKey = false;
 var altKey = false;
 
-const PHASE_1_THRESHOLD = 200;
+const PHASE_1_THRESHOLD = 500;
 const PHASE_2_THRESHOLD = 1000;
 const PHASE_3_THRESHOLD = 3000;
 const PHASE_4_THRESHOLD = 4000;
@@ -82,16 +87,22 @@ const reflow = function() {void document.body.offsetWidth;}
 
 const randColor = function() { return Math.floor(155 + (100 * Math.random())); }
 
-const calcShadeHP = function() {return (1 + shadesCreated) * SHADE_BASE_HP}
+const calculateShadeHP = function() {return (1 + shadesCreated) * SHADE_BASE_HP}
 
-const calcShadeDamage = function() {return (1 + shadesCreated) * SHADE_DAMAGE}
+const calculateShadeDamage = function() {return (1 + shadesCreated) * SHADE_DAMAGE}
+
+const calculateClickPower = function() {return 1 + clickUpgradeLevel * CLICK_UPGRADE}
+
+const calculateClickDamage = function() {return calculateClickPower()}
 
 const calculateTrainCost = function() {
-	return document.querySelectorAll(".satellite").length * TRAIN_COST;
+	return TRAIN_COST + document.querySelectorAll(".satellite").length * TRAIN_COST;
 }
-
-const calculateUpgradeCost = function() {
-	return speedUpgradeLevel * SPEED_COST;
+const calculateSpeedUpgradeCost = function() {
+	return SPEED_COST + speedUpgradeLevel * SPEED_COST;
+}
+const calculateClickUpgradeCost = function() {
+	return CLICK_COST + clickUpgradeLevel * CLICK_COST;
 }
 
 const createClickParticle = function(x, y) {
@@ -104,19 +115,7 @@ const createClickParticle = function(x, y) {
 	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
 }
 
-const createNode = function() {
-	const elm = document.createElement("div");
-	mainNode = elm;
-	elm.classList.add("node");
-	const budElm = document.createElement("div");		
-	budElm.classList.add("bud");
-	elm.appendChild(budElm);
-	createOrbit(elm);
-	document.body.appendChild(elm);
-	mainBud = budElm;
-	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
-	return elm;
-}
+
 
 const createBlobOrbit = function() {
 	const elm = document.createElement("div");		
@@ -158,11 +157,25 @@ const createShade = function() {
 	elm.style.left = `${x*window.innerWidth/100}px`;
 	const shadeElm = document.createElement("div");		
 	shadeElm.classList.add("shade");
-	shadeElm.dataset.hp = calcShadeHP();
+	shadeElm.dataset.hp = calculateShadeHP();
 	elm.appendChild(shadeElm);
 	document.body.appendChild(elm);
 	shadesCreated++;
-	window.setTimeout(_ => {elm.classList.add("attack")}, 1);
+	window.setTimeout(_ => {elm.classList.add("attack")}, 1000);
+}
+
+const createNode = function() {
+	const elm = document.createElement("div");
+	mainNode = elm;
+	elm.classList.add("node");
+	const budElm = document.createElement("div");		
+	budElm.classList.add("bud");
+	elm.appendChild(budElm);
+	createOrbit(elm);
+	document.body.appendChild(elm);
+	mainBud = budElm;
+	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
+	return elm;
 }
 
 const createOrbit = function(parentElm) {
@@ -176,7 +189,7 @@ const createOrbit = function(parentElm) {
 	elm.style.height = `${BASE_ORBIT_SIZE * n}px`;
 	elm.style.marginLeft = `${-BASE_ORBIT_SIZE * n/2}px`;
 	elm.style.marginTop = `${-BASE_ORBIT_SIZE * n/2}px`;
-	createSatellite(elm);
+	// createSatellite(elm);
 	parentElm.appendChild(elm);
 	currentOrbit = elm;
 	// mainNode.style.transform = `scale(${UNIVERSE_SCALE-siblingCount})`;
@@ -217,8 +230,6 @@ const createSatellite = function(parentElm) {
 
 const Init = function() {
 	createNode();
-	trainButtonElm.title = calculateTrainCost();
-	upgradeButtonElm.title = calculateUpgradeCost();
 	document.addEventListener("mousedown", evt => {
 		shiftKey = evt.shiftKey;
 		altKey = evt.altKey;
@@ -259,7 +270,7 @@ const Init = function() {
 			if (evt.target.classList.contains("explode")) {
 				evt.target.remove();
 			} else {
-				energy = Math.max(0, energy - calcShadeDamage());
+				energy = Math.max(0, energy - calculateShadeDamage());
 				evt.target.classList.add("explode");
 			}
 		}
@@ -287,20 +298,21 @@ const onClick = function(evt) {
 	if (evt.shiftKey) createBlobOrbit();
 	if (evt.altKey) createShade();
 	if (evt.target.classList.contains("blob") && !evt.target.classList.contains("acquire")) {
-		energy += BLOB_ENERGY_BASE;
+		energy += (calculateTrainCost() + calculateSpeedUpgradeCost()) * (Math.random() * BLOB_ENERGY_BASE);
 		evt.target.classList.add("acquire");
 	} else if (evt.target.id == "train") {
 		const cost = calculateTrainCost();
 		if (energy < cost) return;
 		energy -= cost;
 		if (currentOrbit.childElementCount >= currentOrbit.dataset.max) {
-			createOrbit(mainNode)
+			createOrbit(mainNode);
+			createSatellite(currentOrbit);
 		} else {
 			createSatellite(currentOrbit);
 		}
 		trainButtonElm.title = calculateTrainCost();
-	} else if (evt.target.id == "upgrade") {
-		const cost = calculateUpgradeCost();
+	} else if (evt.target == upgradeSpeedButtonElm) {
+		const cost = calculateSpeedUpgradeCost();
 		if (energy < cost) return;
 		speedUpgradeLevel++;
 		energy -= cost;
@@ -308,42 +320,48 @@ const onClick = function(evt) {
 			const speed = parseFloat(satellite.style.animationDuration)*(1-SPEED_UPGRADE*speedUpgradeLevel);
 			satellite.style.animationDuration = `${speed}s`;
 		});
-		upgradeButtonLabelElm.title = calculateUpgradeCost();
+		upgradeSpeedButtonLabelElm.title = calculateSpeedUpgradeCost();
+	} else if (evt.target == upgradeClickButtonElm) {
+		const cost = calculateClickUpgradeCost();
+		if (energy < cost) return;
+		clickUpgradeLevel++;
+		energy -= cost;
+		upgradeClickButtonLabelElm.title = calculateSpeedUpgradeCost();
 	} else if (evt.target.classList.contains("shade")) {
-		evt.target.dataset.hp = parseFloat(evt.target.dataset.hp) - CLICK_DAMAGE;
+		evt.target.dataset.hp = Math.max(0, parseFloat(evt.target.dataset.hp) - calculateClickDamage());
 		if (parseFloat(evt.target.dataset.hp) <= 0) {
 			evt.target.parentElement.classList.add("explode");
 		}
 	} else {
-		createClickParticle(evt.clientX, evt.clientY);
-		energy += CLICK_ENERGY_BASE;
+		for (var i=0; i < Math.floor(calculateClickPower()); i++) createClickParticle(evt.clientX, evt.clientY);
+		energy += calculateClickPower();
 	}
 }
 
 const tick = function() {
+	if (!running) return;
 	
-	if (energy != displayedEnergy && energy > 0) {
-		if (energy > displayedEnergy) displayedEnergy++;
-		if (energy < displayedEnergy) displayedEnergy--;
-		// progressElm.innerText = `${displayedEnergy}`;
-	}
+	// if (energy != displayedEnergy && energy > 0) {
+	// 	if (energy > displayedEnergy) displayedEnergy++;
+	// 	if (energy < displayedEnergy) displayedEnergy--;
+	// 	// progressElm.innerText = `${displayedEnergy}`;
+	// }
 
 	const trainCost = calculateTrainCost();
-	const upgradeCost = calculateUpgradeCost();
+	const speedUpgradeCost = calculateSpeedUpgradeCost();
+	const clickUpgradeCost = calculateClickUpgradeCost();
 	
 	trainButtonElm.classList.toggle("enabled", energy >= trainCost);
-	upgradeButtonElm.classList.toggle("enabled", energy >= upgradeCost);
+	upgradeSpeedButtonElm.classList.toggle("enabled", energy >= speedUpgradeCost);
+	upgradeClickButtonElm.classList.toggle("enabled", energy >= clickUpgradeCost);
 	trainButtonLabelElm.style.width = `${Math.min(1, energy/trainCost)*100}%`;
-	upgradeButtonLabelElm.style.width = `${Math.min(1, energy/upgradeCost)*100}%`;
-
-	if (!running) return;
-
-
+	upgradeSpeedButtonLabelElm.style.width = `${Math.min(1, energy/speedUpgradeCost)*100}%`;
+	upgradeClickButtonLabelElm.style.width = `${Math.min(1, energy/clickUpgradeCost)*100}%`;
 
 
 	if (energy < PHASE_1_THRESHOLD) {
 		// Phase 1, awakening
-		document.title = "PHASE1";
+		document.title = "PHASE1: " + energy;
 		document.body.className = "phase1"
 		canSpawnShades = false;
 		const bgFade = 0.5;
@@ -358,10 +376,11 @@ const tick = function() {
 		//document.body.style.background = `radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`;
 		const progressText = `${Math.round(phaseProgress*100)}%`;
 		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
+		document.querySelectorAll(".shade-container").forEach(elm => {elm.classList.add("explode")});
 
 	} else if (energy > PHASE_1_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD) {
 		// Phase 2, dancing
-		document.title = "PHASE2";
+		document.title = "PHASE2: " + energy;
 		document.body.className = "phase2";
 		canSpawnShades = true;
 		const phaseProgress = (energy-PHASE_1_THRESHOLD)/PHASE_2_THRESHOLD;
@@ -382,7 +401,7 @@ const tick = function() {
 
 	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
 		// Phase 3, Harvesting
-		document.title = "PHASE3"
+		document.title = "PHASE3: " + energy;
 		document.body.className = "phase3"
 		canSpawnShades = true;
 		const phaseProgress = (energy-PHASE_2_THRESHOLD-PHASE_1_THRESHOLD)/PHASE_3_THRESHOLD;
@@ -406,7 +425,7 @@ const tick = function() {
 	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
 		// Phase 4, Victory
 		canSpawnShades = false;
-		document.title = "PHASE4"
+		document.title = "PHASE4: " + energy;
 		document.body.className = "phase4"
 		running = false;
 		document.querySelectorAll(".satellite-node").forEach(satelliteNode => {

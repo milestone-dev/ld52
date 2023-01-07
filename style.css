@@ -1,7 +1,6 @@
 :root {
   --bg-color: rgb(0, 0, 25);
-  --node-size: 128px;
-  --orbit-size: 256px;
+  --node-size: 192px;
   --shade-size: 164px;
   --button-width: 228px;
 }
@@ -76,8 +75,20 @@ div {
 	border-radius: 50%;
 }
 
+#buttons {
+	display: flex;
+	position: fixed;
+	bottom: 32px;
+	left: 0;
+	right: 0;
+	border-radius: 0;
+	justify-content: center;
+	 gap: 20px;
+}
+
 button {
 	display: block;
+	position: relative;
 	pointer-events: all;
 	background: transparent;
 	color: rgba(255, 255, 255, 0.2);
@@ -89,8 +100,6 @@ button {
 	padding-bottom: 16px;
 	font-size: 16px;
 	font-weight: bold;
-	position: fixed;
-	bottom: 32px;
 	text-align: center;
 	overflow: hidden;
 }
@@ -129,16 +138,6 @@ button span {
 
 button:hover span {
 	background-color: rgba(255, 255, 255, 0.6);
-}
-
-#train {
-	left: 50%;
-	margin-left: calc(var(--button-width)*1.13*-1);
-}
-
-#upgrade {
-	right: 50%;
-	margin-right: calc(var(--button-width)*1.13*-1);
 }
 
 .notice {
@@ -225,7 +224,6 @@ button:hover span {
 	top: 50%;
 	left: 50%;
 	transform: translateZ(0);
-
 }
 
 .satellite {
@@ -349,6 +347,10 @@ button:hover span {
 	animation-iteration-count: infinite;
 	animation-timing-function: linear;
 	z-index: 9997;
+}
+
+.shade:hover::after {
+	content: attr(data-hp);
 }
 
 .shade:active {
