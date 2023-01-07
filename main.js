@@ -38,6 +38,37 @@ const PHASE_2_THRESHOLD = 1000;
 const PHASE_3_THRESHOLD = 3000;
 const PHASE_4_THRESHOLD = 4000;
 
+const PHASE_1_MIN_R = 10;
+const PHASE_1_MIN_G = 10;
+const PHASE_1_MIN_B = 25;
+const PHASE_1_MIN_A = 1;
+
+const PHASE_1_MAX_R = 100;
+const PHASE_1_MAX_G = 100;
+const PHASE_1_MAX_B = 255;
+const PHASE_1_MAX_A = 1;
+
+const PHASE_2_MIN_R = PHASE_1_MAX_R;
+const PHASE_2_MIN_G = PHASE_1_MAX_G;
+const PHASE_2_MIN_B = PHASE_1_MAX_B;
+const PHASE_2_MIN_A = PHASE_1_MAX_A;
+
+const PHASE_2_MAX_R = 100;
+const PHASE_2_MAX_G = 100;
+const PHASE_2_MAX_B = 100;
+const PHASE_2_MAX_A = 1;
+
+const PHASE_3_MIN_R = 100;
+const PHASE_3_MIN_G = 100;
+const PHASE_3_MIN_B = 0;
+const PHASE_3_MIN_A = 1;
+
+const PHASE_3_MAX_R = 100;
+const PHASE_3_MAX_G = 100;
+const PHASE_3_MAX_B = 100;
+const PHASE_3_MAX_A = 1;
+
+
 const reflow = _ => {void document.body.offsetWidth;}
 
 const randColor = _ => { return Math.floor(155 + (100 * Math.random())); }
@@ -235,35 +266,7 @@ const tick = function() {
 
 	if (!running) return;
 
-	const PHASE_1_MIN_R = 10;
-	const PHASE_1_MIN_G = 10;
-	const PHASE_1_MIN_B = 25;
-	const PHASE_1_MIN_A = 1;
 
-	const PHASE_1_MAX_R = 100;
-	const PHASE_1_MAX_G = 100;
-	const PHASE_1_MAX_B = 255;
-	const PHASE_1_MAX_A = 1;
-
-	const PHASE_2_MIN_R = PHASE_1_MAX_R;
-	const PHASE_2_MIN_G = PHASE_1_MAX_G;
-	const PHASE_2_MIN_B = PHASE_1_MAX_B;
-	const PHASE_2_MIN_A = PHASE_1_MAX_A;
-
-	const PHASE_2_MAX_R = 100;
-	const PHASE_2_MAX_G = 100;
-	const PHASE_2_MAX_B = 100;
-	const PHASE_2_MAX_A = 1;
-
-	const PHASE_3_MIN_R = 100;
-	const PHASE_3_MIN_G = 100;
-	const PHASE_3_MIN_B = 0;
-	const PHASE_3_MIN_A = 1;
-
-	const PHASE_3_MAX_R = 100;
-	const PHASE_3_MAX_G = 100;
-	const PHASE_3_MAX_B = 100;
-	const PHASE_3_MAX_A = 1;
 
 
 	if (energy < PHASE_1_THRESHOLD) {
@@ -283,7 +286,7 @@ const tick = function() {
 		const progressText = `${Math.round(phaseProgress*100)}%`;
 		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 
-	} else if (energy > PHASE_1_THRESHOLD && energy < PHASE_2_THRESHOLD) {
+	} else if (energy > PHASE_1_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD) {
 		// Phase 2, dancing
 		document.title = "PHASE2";
 		document.body.className = "phase2";
@@ -303,11 +306,11 @@ const tick = function() {
 		const progressText = `${Math.round(phaseProgress*100)}%`
 		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 
-	} else if (energy > PHASE_2_THRESHOLD && energy < PHASE_3_THRESHOLD) {
+	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
 		// Phase 3, Harvesting
 		document.title = "PHASE3"
 		document.body.className = "phase3"
-		const phaseProgress = (energy-PHASE_2_THRESHOLD)/PHASE_3_THRESHOLD;
+		const phaseProgress = (energy-PHASE_2_THRESHOLD-PHASE_1_THRESHOLD)/PHASE_3_THRESHOLD;
 		const r = PHASE_3_MIN_R + Math.max(PHASE_3_MIN_R, phaseProgress * (PHASE_3_MAX_R - PHASE_3_MIN_R));
 		const g = PHASE_3_MIN_G + Math.max(PHASE_3_MIN_G, phaseProgress * (PHASE_3_MAX_G - PHASE_3_MIN_G));
 		const b = PHASE_3_MIN_B + Math.max(PHASE_3_MIN_B, phaseProgress * (PHASE_3_MAX_B - PHASE_3_MIN_B));
@@ -325,7 +328,7 @@ const tick = function() {
 		const progressText = `${Math.round(phaseProgress*100)}%`
 		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 
-	} else if (energy > PHASE_3_THRESHOLD) {
+	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
 		// Phase 4, Victory
 		document.title = "PHASE4"
 		document.body.className = "phase4"
