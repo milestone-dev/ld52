@@ -7,6 +7,7 @@ var currentOrbit;
 const ENERGY_PER_CYCLE = 1;
 const trainButtonLabelElm = document.querySelector("#train span");
 const upgradeButtonLabelElm = document.querySelector("#upgrade span");
+const cursorElm = document.querySelector("#cursor");
 const BASE_ORBIT_SIZE = 256;
 const BASE_ANIMATION_SPEED = 1.5;
 const ORBIT_SCALE = 0.1;
@@ -18,6 +19,7 @@ const LEAVING_TIME_MAX = 25;
 const TRAIN_COST = 5;
 const SPEED_COST = 5;
 const SPEED_UPGRADE = 0.005;
+const BLOB_ENERGY_BASE = 22;
 var speedUpgradeLevel = 1;
 var mouseDown = false;
 var mouseClick = false;
@@ -40,6 +42,31 @@ const createNode = function() {
 	createOrbit(elm);
 	document.body.appendChild(elm);
 	return elm;
+}
+
+const createBlobOrbit = function() {
+	const elm = document.createElement("div");		
+	elm.classList = "blob-orbit";
+	var x = Math.random()*100;
+	var y = Math.random()*100;
+	if (Math.random() > 0.5) x = (x < 50) ? 1 : 99;
+	else y = (y < 50) ? 1 : 99;
+	elm.style.top = `${y}vh`;
+	elm.style.left = `${x}vw`;
+	const w = Math.max(30, Math.random()*50);
+	const h = Math.max(30, Math.random()*50);
+	elm.style.width = `${w}vw`;
+	elm.style.height = `${h}vh`;
+	elm.style.marginTop = `${-h/2}vh`;
+	elm.style.marginLeft = `${-w/2}vw`;
+	if (Math.random() > 0.5) elm.classList.add("reverse");
+
+	const blobElm = document.createElement("div");		
+	blobElm.classList.add("blob");
+	if (Math.random() > 0.5) blobElm.classList.add("reverse");
+	elm.appendChild(blobElm);
+
+	document.body.appendChild(elm);
 }
 
 const createOrbit = function(parentElm) {
@@ -100,11 +127,14 @@ const Init = function() {
 		shiftKey = evt.shiftKey;
 		altKey = evt.altKey;
 		mouseDown = true;
-	})
+	});
 	document.addEventListener("mouseup", evt => {
 		shiftKey = false;
 		altKey = false;
 		mouseDown = false;
+	});
+	document.addEventListener("mousemove", evt => {
+		cursorElm.style.transform = `translate(${evt.clientX}px, ${evt.clientY}px)`;
 	})
 	document.addEventListener("click", onClick);
 
@@ -119,6 +149,15 @@ const Init = function() {
 			// elm.style.animationDuration = `${speed}s`;
 		}
 	});
+
+
+	document.addEventListener("transitionend", evt => {
+		if (!running) return;
+		console.log(evt.target);
+		if (evt.target.classList.contains("blob") && evt.target.classList.contains("acquire")) {
+			evt.target.parentElement.remove();
+		}
+	});
 	window.requestAnimationFrame(tick);
 };
 
@@ -131,7 +170,11 @@ const calculateUpgradeCost = function() {
 }
 
 const onClick = function(evt) {
-	if (evt.target.id == "train") {
+	if (evt.shiftKey) createBlobOrbit();
+	if (evt.target.classList.contains("blob") && !evt.target.classList.contains("acquire")) {
+		energy += BLOB_ENERGY_BASE;
+		evt.target.classList.add("acquire");
+	} else if (evt.target.id == "train") {
 		const cost = calculateTrainCost();
 		if (energy < cost) return;
 		energy -= cost;
@@ -167,11 +210,14 @@ const tick = function() {
 	// Phase 1, awakening
 	if (energy < PHASE_1_THRESHOLD) {
 		document.title = "PHASE1";
-		const rg = Math.max(5, (energy/PHASE_1_THRESHOLD)*25);
-		const b = Math.max(25, (energy/PHASE_1_THRESHOLD)*100);
+		const rg = 1 + (energy/PHASE_1_THRESHOLD)*25;
+		const b = 7 + (energy*10/PHASE_1_THRESHOLD)*33;
 		// const a = Math.max(0.1, energy/PHASE_1_THRESHOLD);
 		const a = 1;
 		mainNode.style.backgroundColor = `rgba(${rg},${rg},${b},${a})`;
+		// console.log(`radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`);
+		document.body.style.background = `radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0))`;
+		//document.body.style.background = `radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`;
 	}
 	
 	// Phase 2, dancing
