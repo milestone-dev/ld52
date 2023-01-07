@@ -2,6 +2,7 @@
   --bg-color: rgb(0, 0, 25);
   --node-size: 128px;
   --orbit-size: 256px;
+  --shade-size: 164px;
   --button-width: 228px;
 }
 
@@ -20,7 +21,7 @@ body {
 }
 
 html {
-	/*cursor: url(cursor.png), auto;*/
+	cursor: url(cursor.png), auto;
 }
 
 *,* {
@@ -41,9 +42,32 @@ html {
 	animation: flicker;
 	animation-duration: 1s;
 	animation-iteration-count: infinite;
-	animation-timing-function: ease-in-out;
+	animation-timing-function: linear;
 	animation-fill-mode: both;
 	z-index: 9999;
+}
+
+.particle {
+	position: absolute;
+	display: block;
+	width: 5px;
+	height: 5px;
+	border-radius: 100%;
+	background: rgba(255, 255, 150, 0.0);
+	animation: flicker;
+	animation-duration: 1s;
+	animation-iteration-count: infinite;
+	animation-timing-function: linear;
+	animation-fill-mode: both;
+	z-index: 9998;
+	transition: transform 3s, opacity 2.5s;
+	transform: translateY(-10vh) scale(0);
+	opacity: 0;
+}
+
+.particle.new {
+	transform: translateY(0) scale(3.5);
+	opacity: 1;
 }
 
 div {
@@ -294,6 +318,43 @@ button:hover span {
 	opacity: 0;
 }
 
+.shade-container {
+	width: var(--shade-size);
+	height: var(--shade-size);
+	margin-left: calc(var(--shade-size)/2*-1);
+	margin-top: calc(var(--shade-size)/2*-1);
+	transition: top 15s linear, left 15s linear, opacity 0.6s linear;
+	animation-iteration-count: 1;
+}
+
+.shade-container.attack {
+	left: 50vw!important;
+	top: 50vh!important;
+}
+
+.shade-container.explode {
+	pointer-events: none;
+	opacity: 0;
+}
+
+.shade {
+	z-index: 100;
+	pointer-events: all;
+	display: block;
+	width: var(--shade-size);
+	height: var(--shade-size);
+	border-radius: 100%;
+	background: rgba(0, 0, 0, 1.0);
+	animation: rotate 5s, morph 4s, shade-flicker 1s;
+	animation-iteration-count: infinite;
+	animation-timing-function: linear;
+	z-index: 9997;
+}
+
+.shade:active {
+	filter: invert(50%);
+}
+
 @keyframes rotate {
   from {
     transform: rotate(0deg);
@@ -319,6 +380,27 @@ button:hover span {
     box-shadow:
     	0 0 5px 5px rgba(255, 255, 200, 0.2),
     	0 0 0px 2px rgba(255, 255, 200, 1);
+  }
+}
+
+@keyframes shade-flicker {
+  0% {
+    box-shadow:
+    	0 0 50px 50px rgba(0, 0, 0, 1),
+    	0 0 20px 20px rgba(0, 0, 0, 1);
+  }
+
+  50% {
+    box-shadow:
+    	0 0 64px 50px rgba(0, 0, 0, 1),
+    	0 0 20px 20px rgba(0, 0, 0, 1);
+
+  }
+
+  100% {
+    box-shadow:
+    	0 0 50px 50px rgba(0, 0, 0, 1),
+    	0 0 20px 20px rgba(0, 0, 0, 1);
   }
 }
 

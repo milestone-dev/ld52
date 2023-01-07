@@ -27,7 +27,16 @@ const BLOB_ENERGY_BASE = 22;
 const BLOB_SPAWN_TIMER_MIN = 5000;
 const BLOB_SPAWN_TIMER_MAX = 30000;
 const BLOB_MAX_COUNT = 5;
+const SHADE_DAMAGE = 50;
+const SHADE_BASE_HP = 50;
+const CLICK_ENERGY_BASE = 1;
+const CLICK_DAMAGE = 13;
+const SHADE_MAX_COUNT = 4;
+const SHADE_SPAWN_TIMER_MIN = 3000;
+const SHADE_SPAWN_TIMER_MAX = 6000;
 var speedUpgradeLevel = 1;
+var shadesCreated = 0;
+var canSpawnShades = false;
 var mouseDown = false;
 var mouseClick = false;
 var shiftKey = false;
@@ -69,53 +78,98 @@ const PHASE_3_MAX_B = 100;
 const PHASE_3_MAX_A = 1;
 
 
-const reflow = _ => {void document.body.offsetWidth;}
+const reflow = function() {void document.body.offsetWidth;}
 
-const randColor = _ => { return Math.floor(155 + (100 * Math.random())); }
+const randColor = function() { return Math.floor(155 + (100 * Math.random())); }
+
+const calcShadeHP = function() {return (1 + shadesCreated) * SHADE_BASE_HP}
+
+const calcShadeDamage = function() {return (1 + shadesCreated) * SHADE_DAMAGE}
+
+const calculateTrainCost = function() {
+	return document.querySelectorAll(".satellite").length * TRAIN_COST;
+}
+
+const calculateUpgradeCost = function() {
+	return speedUpgradeLevel * SPEED_COST;
+}
+
+const createClickParticle = function(x, y) {
+	const elm = document.createElement("div");
+	elm.classList.add("particle");
+	elm.classList.add("new");
+	elm.style.top = `${y}px`;
+	elm.style.left = `${x}px`;
+	document.body.appendChild(elm);
+	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
+}
 
 const createNode = function() {
 	const elm = document.createElement("div");
 	mainNode = elm;
-	elm.classList = "node";
+	elm.classList.add("node");
 	const budElm = document.createElement("div");		
 	budElm.classList.add("bud");
 	elm.appendChild(budElm);
 	createOrbit(elm);
 	document.body.appendChild(elm);
 	mainBud = budElm;
+	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
 	return elm;
 }
 
 const createBlobOrbit = function() {
 	const elm = document.createElement("div");		
-	elm.classList = "blob-orbit";
+	elm.classList.add("blob-orbit");
 	var x = Math.random()*100;
 	var y = Math.random()*100;
 	if (Math.random() > 0.5) x = (x < 50) ? 1 : 99;
 	else y = (y < 50) ? 1 : 99;
-	elm.style.top = `${y}vh`;
-	elm.style.left = `${x}vw`;
+	elm.style.top = `${y*window.innerHeight/100}px`;
+	elm.style.left = `${x*window.innerWidth/100}px`;
 	const w = Math.max(30, Math.random()*50);
 	const h = Math.max(30, Math.random()*50);
-	elm.style.width = `${w}vw`;
-	elm.style.height = `${h}vh`;
-	elm.style.marginTop = `${-h/2}vh`;
-	elm.style.marginLeft = `${-w/2}vw`;
+	elm.style.width = `${w*window.innerWidth/100}px`;
+	elm.style.height = `${h*window.innerHeight/100}px`;
+	elm.style.marginLeft = `${-(w*window.innerWidth/100)/2}px`;
+	elm.style.marginTop = `${-(h*window.innerHeight/100)/2}px`;
 	if (Math.random() > 0.5) elm.classList.add("reverse");
 
 	const blobElm = document.createElement("div");		
 	blobElm.classList.add("blob");
+	const bs = Math.max(16, Math.random()*32);
+	blobElm.style.width = `${bs}px`;
+	blobElm.style.height = `${bs}px`;
 	if (Math.random() > 0.5) blobElm.classList.add("reverse");
 	elm.appendChild(blobElm);
 
 	document.body.appendChild(elm);
 }
 
+const createShade = function() {
+	const elm = document.createElement("div");		
+	elm.classList.add("shade-container");
+
+	var x = Math.random()*100;
+	var y = Math.random()*100;
+	if (Math.random() > 0.5) x = (x < 50) ? 1 : 99;
+	else y = (y < 50) ? 1 : 99;
+	elm.style.top = `${y*window.innerHeight/100}px`;
+	elm.style.left = `${x*window.innerWidth/100}px`;
+	const shadeElm = document.createElement("div");		
+	shadeElm.classList.add("shade");
+	shadeElm.dataset.hp = calcShadeHP();
+	elm.appendChild(shadeElm);
+	document.body.appendChild(elm);
+	shadesCreated++;
+	window.setTimeout(_ => {elm.classList.add("attack")}, 1);
+}
+
 const createOrbit = function(parentElm) {
 	const siblingCount = parentElm.querySelectorAll(".orbit").length;
 	const n = 1 + siblingCount * ORBIT_SCALE;
 	const elm = document.createElement("div");
-	elm.classList = "orbit";
+	elm.classList.add("orbit");
 	elm.dataset.color = [randColor(),randColor(),randColor()];
 	elm.dataset.max = ORBIT_MAX_COUNT_MIN + siblingCount * ORBIT_MAX_COUNT_SCALE;
 	elm.style.width = `${BASE_ORBIT_SIZE * n}px`;
@@ -133,7 +187,7 @@ const createSatellite = function(parentElm) {
 	const orbitFactor = mainNode.querySelectorAll(".orbit").length/10;
 	const n = 1 + parentElm.querySelectorAll(".satellite").length;
 	const elm = document.createElement("div");		
-	elm.classList = "satellite";
+	elm.classList.add("satellite");
 	const max = parseInt(parentElm.dataset.max);
 	//const c = parentElm.dataset.color.split(",").map(e=>parseInt(e));
 	const c = [randColor(),randColor(),randColor()];
@@ -176,7 +230,7 @@ const Init = function() {
 		mouseDown = false;
 	});
 	document.addEventListener("mousemove", evt => {
-		// cursorElm.style.transform = `translate(${evt.clientX}px, ${evt.clientY}px)`;
+		cursorElm.style.transform = `translate(${evt.clientX}px, ${evt.clientY}px)`;
 	})
 	document.addEventListener("click", onClick);
 
@@ -199,10 +253,20 @@ const Init = function() {
 			evt.target.parentElement.remove();
 		} else if (evt.target.classList.contains("blob-orbit") && evt.target.classList.contains("disappear")) {
 			evt.target.remove();
+		} else if (evt.target.classList.contains("particle") && !evt.target.classList.contains("new")) {
+			evt.target.remove();
+		} else if (evt.target.classList.contains("shade-container")) {
+			if (evt.target.classList.contains("explode")) {
+				evt.target.remove();
+			} else {
+				energy = Math.max(0, energy - calcShadeDamage());
+				evt.target.classList.add("explode");
+			}
 		}
 	});
 	window.requestAnimationFrame(tick);
 	window.setTimeout(onBlobSpawnTimerCompete, BLOB_SPAWN_TIMER_MIN + Math.random() * (BLOB_SPAWN_TIMER_MAX - BLOB_SPAWN_TIMER_MIN));
+	window.setTimeout(onShadeSpawnTimerCompete, SHADE_SPAWN_TIMER_MIN + Math.random() * (SHADE_SPAWN_TIMER_MAX - SHADE_SPAWN_TIMER_MIN));
 };
 
 const onBlobSpawnTimerCompete = function() {
@@ -212,16 +276,16 @@ const onBlobSpawnTimerCompete = function() {
 	window.setTimeout(onBlobSpawnTimerCompete, BLOB_SPAWN_TIMER_MIN + Math.random() * (BLOB_SPAWN_TIMER_MAX - BLOB_SPAWN_TIMER_MIN));
 }
 
-const calculateTrainCost = function() {
-	return document.querySelectorAll(".satellite").length * TRAIN_COST;;
-}
-
-const calculateUpgradeCost = function() {
-	return speedUpgradeLevel * SPEED_COST;
+const onShadeSpawnTimerCompete = function() {
+	if (canSpawnShades && document.querySelectorAll("shade-container").length < SHADE_MAX_COUNT) {
+		createShade();
+	}
+	window.setTimeout(onShadeSpawnTimerCompete, SHADE_SPAWN_TIMER_MIN + Math.random() * (SHADE_SPAWN_TIMER_MAX - SHADE_SPAWN_TIMER_MIN));
 }
 
 const onClick = function(evt) {
 	if (evt.shiftKey) createBlobOrbit();
+	if (evt.altKey) createShade();
 	if (evt.target.classList.contains("blob") && !evt.target.classList.contains("acquire")) {
 		energy += BLOB_ENERGY_BASE;
 		evt.target.classList.add("acquire");
@@ -245,6 +309,14 @@ const onClick = function(evt) {
 			satellite.style.animationDuration = `${speed}s`;
 		});
 		upgradeButtonLabelElm.title = calculateUpgradeCost();
+	} else if (evt.target.classList.contains("shade")) {
+		evt.target.dataset.hp = parseFloat(evt.target.dataset.hp) - CLICK_DAMAGE;
+		if (parseFloat(evt.target.dataset.hp) <= 0) {
+			evt.target.parentElement.classList.add("explode");
+		}
+	} else {
+		createClickParticle(evt.clientX, evt.clientY);
+		energy += CLICK_ENERGY_BASE;
 	}
 }
 
@@ -273,6 +345,7 @@ const tick = function() {
 		// Phase 1, awakening
 		document.title = "PHASE1";
 		document.body.className = "phase1"
+		canSpawnShades = false;
 		const bgFade = 0.5;
 		const phaseProgress = energy/PHASE_1_THRESHOLD;
 		const r = PHASE_1_MIN_R + Math.max(PHASE_1_MIN_R, phaseProgress * (PHASE_1_MAX_R - PHASE_1_MIN_R));
@@ -290,6 +363,7 @@ const tick = function() {
 		// Phase 2, dancing
 		document.title = "PHASE2";
 		document.body.className = "phase2";
+		canSpawnShades = true;
 		const phaseProgress = (energy-PHASE_1_THRESHOLD)/PHASE_2_THRESHOLD;
 		const r = PHASE_2_MIN_R + Math.max(PHASE_2_MIN_R, phaseProgress * (PHASE_2_MAX_R - PHASE_2_MIN_R));
 		const g = PHASE_2_MIN_G + Math.max(PHASE_2_MIN_G, phaseProgress * (PHASE_2_MAX_G - PHASE_2_MIN_G));
@@ -310,6 +384,7 @@ const tick = function() {
 		// Phase 3, Harvesting
 		document.title = "PHASE3"
 		document.body.className = "phase3"
+		canSpawnShades = true;
 		const phaseProgress = (energy-PHASE_2_THRESHOLD-PHASE_1_THRESHOLD)/PHASE_3_THRESHOLD;
 		const r = PHASE_3_MIN_R + Math.max(PHASE_3_MIN_R, phaseProgress * (PHASE_3_MAX_R - PHASE_3_MIN_R));
 		const g = PHASE_3_MIN_G + Math.max(PHASE_3_MIN_G, phaseProgress * (PHASE_3_MAX_G - PHASE_3_MIN_G));
@@ -330,6 +405,7 @@ const tick = function() {
 
 	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
 		// Phase 4, Victory
+		canSpawnShades = false;
 		document.title = "PHASE4"
 		document.body.className = "phase4"
 		running = false;
