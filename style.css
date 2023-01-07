@@ -28,8 +28,8 @@ div {
 
 button {
 	pointer-events: all;
-	background: rgba(255, 255, 255, 0.5);
-	color: var(--bg-color);
+	background: transparent;
+	color: rgba(255, 255, 255, 0.5);
 	width: var(--button-width);
 	border: 0;
 	box-sizing: border-box;
@@ -44,11 +44,12 @@ button {
 }
 
 button:hover {
-	background: rgba(255, 255, 255, 0.7);
+	color: rgba(255, 255, 255, 0.7);
 }
 
 button span {
 	display: block;
+	color: inherit;
 }
 
 #train {
