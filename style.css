@@ -1,0 +1,164 @@
+:root {
+  --bg-color: rgb(0, 0, 25);
+  --node-size: 128px;
+  --orbit-size: 256px;
+  --button-width: 128px;
+}
+
+body {
+	background: var(--bg-color);
+	text-align: center;
+	user-select: none;
+	overflow: hidden;
+}
+
+*,* {
+	color: #fff;
+	font: 14px sans-serif;
+	margin: 0;
+	padding: 0;
+	pointer-events: none;
+}
+
+div {
+	position: absolute;
+	display: block;
+	border-radius: 50%;
+}
+
+button {
+	pointer-events: all;
+	background: rgba(255, 255, 255, 0.5);
+	color: var(--bg-color);
+	width: var(--button-width);
+	border: 0;
+	box-sizing: border-box;
+	padding-top: 16px;
+	padding-bottom: 16px;
+	font-size: 16px;
+	font-weight: bold;
+	border-radius: 10%/10%;
+	position: fixed;
+	bottom: 16px;
+	text-align: center;
+}
+
+button:hover {
+	background: rgba(255, 255, 255, 0.7);
+}
+
+button span {
+	display: block;
+}
+
+#train {
+	left: 50%;
+	margin-left: calc(var(--button-width)*1.13*-1);
+}
+
+#upgrade {
+	right: 50%;
+	margin-right: calc(var(--button-width)*1.13*-1);
+}
+
+.notice {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	padding: 16px;
+	background: #445;
+}
+
+.node {
+	width: var(--node-size);
+	height: var(--node-size);
+	background: rgba(255, 255, 255, 0);
+	pointer-events: all;
+	transition: transform 3s, background-color 3s, border-radius 2s;
+	transform: rotate(45deg);
+/*	box-shadow:
+		0 0 50px 5px rgba(255, 255, 255, 0.7),
+		0 0 10px 5px rgba(255, 255, 255, 0.9),
+		inset 0 0 20px rgba(0, 0, 25, 0.2);*/
+}
+
+.node::before {
+	color: #000;
+	width: var(--node-size);
+	height: var(--node-size);
+	text-align: center;
+	line-height: var(--node-size);
+	display: block;
+	font-weight: bold;
+	content: attr(data-energy);
+	transform: rotate(-45deg);
+}
+
+.orbit {
+	position: absolute;
+	pointer-events: none;
+/*	outline: 16px solid rgba(0,0,0,0.1);*/
+	top: 50%;
+	left: 50%;
+	transform: translateZ(0);
+
+}
+
+.satellite {
+	position: absolute;
+	pointer-events: none;
+	top: 50%;
+	left: 50%;
+  animation-duration: 0.9s;
+	animation-timing-function: linear;
+	animation-name: rotate;
+}
+
+.satellite.running  {
+  	border-color: #fff;
+}
+
+.satellite-node {
+	width: 16px;
+	height: 8px;
+	border-radius: 50% 50% 50% 50%;
+	background: #fff;
+	top: -16px;
+	left: 50%;
+	margin-left: calc(-24px/2);
+	transition: transform 1s, opacity 2s;
+	opacity: 1;
+}
+
+.satellite-node.new {
+	transform: translate(-5vw, -50vh) scale(0.3);
+	opacity: 0;
+}
+
+.satellite-node.collecting {
+	opacity: 1;
+}
+
+.satellite-node.leaving {
+	transition: transform 15s, opacity 4s;
+	transform: translate(0, -100vw) scale(3);
+	opacity: 1;
+}
+
+.node {
+	top: 50%;
+	left: 50%;
+	margin-left: -24px;
+	margin-top: -24px;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
