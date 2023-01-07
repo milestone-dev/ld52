@@ -1,17 +1,20 @@
 
-var running = true;
+var running = false;
 var energy = 0;
 var displayedEnergy = -1;
 var mainNode;
 var mainBud;
 var currentOrbit;
 const ENERGY_PER_CYCLE = 1;
+const gameElm = document.querySelector("#game");
 const trainButtonElm = document.querySelector("#train");
 const upgradeSpeedButtonElm = document.querySelector("#upgradeSpeed");
 const upgradeClickButtonElm = document.querySelector("#upgradeClick");
-const trainButtonLabelElm = document.querySelector("#train span");
-const upgradeSpeedButtonLabelElm = document.querySelector("#upgradeSpeed span");
-const upgradeClickButtonLabelElm = document.querySelector("#upgradeClick span");
+const trainButtonBarElm = document.querySelector("#train .bar");
+const upgradeSpeedButtonBarElm = document.querySelector("#upgradeSpeed .bar");
+const upgradeClickButtonBarElm = document.querySelector("#upgradeClick .bar");
+const introElm = document.querySelector("#intro");
+const outroElm = document.querySelector("#outro");
 const cursorElm = document.querySelector("#cursor");
 const progressElm = document.querySelector("#progress");
 const BASE_ORBIT_SIZE = 240;
@@ -46,6 +49,8 @@ var mouseDown = false;
 var mouseClick = false;
 var shiftKey = false;
 var altKey = false;
+var gameStartDate = null;
+var gameCompleteDate = null;
 
 const PHASE_1_THRESHOLD = 500;
 const PHASE_2_THRESHOLD = 1000;
@@ -115,7 +120,22 @@ const createClickParticle = function(x, y) {
 	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
 }
 
+const displayIntroScreen = function() {
+	document.body.dataset.screen = "intro";
+}
 
+const startGame = function() {
+	document.body.dataset.screen = "game";
+	gameStartDate = new Date();
+	running = true;
+	createNode(); 
+}
+
+const displayOutroScreen = function() {
+	gameCompleteDate = new Date();
+	document.body.dataset.screen = "outro";
+	outroElm.querySelector("p").innerText = `You beat the game in ${((gameCompleteDate.getTime() - gameStartDate.getTime()) / 1000).toPrecision(3)} seconds.`;
+}
 
 const createBlobOrbit = function() {
 	const elm = document.createElement("div");		
@@ -142,7 +162,7 @@ const createBlobOrbit = function() {
 	if (Math.random() > 0.5) blobElm.classList.add("reverse");
 	elm.appendChild(blobElm);
 
-	document.body.appendChild(elm);
+	gameElm.appendChild(elm);
 }
 
 const createShade = function() {
@@ -159,10 +179,12 @@ const createShade = function() {
 	shadeElm.classList.add("shade");
 	shadeElm.dataset.hp = calculateShadeHP();
 	elm.appendChild(shadeElm);
-	document.body.appendChild(elm);
+	gameElm.appendChild(elm);
 	shadesCreated++;
 	window.setTimeout(_ => {elm.classList.add("attack")}, 1000);
 }
+
+const destroyAllShades = function() {document.querySelectorAll(".shade-container").forEach(elm => {elm.classList.add("explode")});}
 
 const createNode = function() {
 	const elm = document.createElement("div");
@@ -172,7 +194,7 @@ const createNode = function() {
 	budElm.classList.add("bud");
 	elm.appendChild(budElm);
 	createOrbit(elm);
-	document.body.appendChild(elm);
+	gameElm.appendChild(elm);
 	mainBud = budElm;
 	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
 	return elm;
@@ -229,7 +251,7 @@ const createSatellite = function(parentElm) {
 }
 
 const Init = function() {
-	createNode();
+	document.addEventListener("keyup", onKeyUp);
 	document.addEventListener("mousedown", evt => {
 		shiftKey = evt.shiftKey;
 		altKey = evt.altKey;
@@ -278,9 +300,11 @@ const Init = function() {
 	window.requestAnimationFrame(tick);
 	window.setTimeout(onBlobSpawnTimerCompete, BLOB_SPAWN_TIMER_MIN + Math.random() * (BLOB_SPAWN_TIMER_MAX - BLOB_SPAWN_TIMER_MIN));
 	window.setTimeout(onShadeSpawnTimerCompete, SHADE_SPAWN_TIMER_MIN + Math.random() * (SHADE_SPAWN_TIMER_MAX - SHADE_SPAWN_TIMER_MIN));
+	displayIntroScreen();
 };
 
 const onBlobSpawnTimerCompete = function() {
+	if (!running) return;
 	if (document.querySelectorAll("blob-orbit").length < BLOB_MAX_COUNT) {
 		createBlobOrbit();
 	}
@@ -288,15 +312,28 @@ const onBlobSpawnTimerCompete = function() {
 }
 
 const onShadeSpawnTimerCompete = function() {
+	if (!running) return;
 	if (canSpawnShades && document.querySelectorAll("shade-container").length < SHADE_MAX_COUNT) {
 		createShade();
 	}
 	window.setTimeout(onShadeSpawnTimerCompete, SHADE_SPAWN_TIMER_MIN + Math.random() * (SHADE_SPAWN_TIMER_MAX - SHADE_SPAWN_TIMER_MIN));
 }
 
+const onKeyUp = function(evt) {
+	console.log(evt.key);
+	const key = evt.key.toLowerCase();
+	if (evt.key == "f") trainButtonElm.click();
+	else if (evt.key == "s") upgradeSpeedButtonElm.click();
+	else if (evt.key == "c") upgradeClickButtonElm.click();
+}
+
 const onClick = function(evt) {
-	if (evt.shiftKey) createBlobOrbit();
-	if (evt.altKey) createShade();
+	if (document.body.dataset.screen == "intro") startGame();
+	else if (document.body.dataset.screen == "outro") displayIntroScreen();
+
+	if (!running) return;
+	// if (evt.shiftKey) createBlobOrbit();
+	// if (evt.altKey) createShade();
 	if (evt.target.classList.contains("blob") && !evt.target.classList.contains("acquire")) {
 		energy += (calculateTrainCost() + calculateSpeedUpgradeCost()) * (Math.random() * BLOB_ENERGY_BASE);
 		evt.target.classList.add("acquire");
@@ -320,124 +357,123 @@ const onClick = function(evt) {
 			const speed = parseFloat(satellite.style.animationDuration)*(1-SPEED_UPGRADE*speedUpgradeLevel);
 			satellite.style.animationDuration = `${speed}s`;
 		});
-		upgradeSpeedButtonLabelElm.title = calculateSpeedUpgradeCost();
+		upgradeSpeedButtonBarElm.title = calculateSpeedUpgradeCost();
 	} else if (evt.target == upgradeClickButtonElm) {
 		const cost = calculateClickUpgradeCost();
 		if (energy < cost) return;
 		clickUpgradeLevel++;
 		energy -= cost;
-		upgradeClickButtonLabelElm.title = calculateSpeedUpgradeCost();
+		upgradeClickButtonBarElm.title = calculateSpeedUpgradeCost();
 	} else if (evt.target.classList.contains("shade")) {
 		evt.target.dataset.hp = Math.max(0, parseFloat(evt.target.dataset.hp) - calculateClickDamage());
 		if (parseFloat(evt.target.dataset.hp) <= 0) {
 			evt.target.parentElement.classList.add("explode");
 		}
 	} else {
-		for (var i=0; i < Math.floor(calculateClickPower()); i++) createClickParticle(evt.clientX, evt.clientY);
+		createClickParticle(evt.clientX, evt.clientY);
 		energy += calculateClickPower();
 	}
 }
 
 const tick = function() {
-	if (!running) return;
+	if (running) {
+		// if (energy != displayedEnergy && energy > 0) {
+		// 	if (energy > displayedEnergy) displayedEnergy++;
+		// 	if (energy < displayedEnergy) displayedEnergy--;
+		// 	// progressElm.innerText = `${displayedEnergy}`;
+		// }
 	
-	// if (energy != displayedEnergy && energy > 0) {
-	// 	if (energy > displayedEnergy) displayedEnergy++;
-	// 	if (energy < displayedEnergy) displayedEnergy--;
-	// 	// progressElm.innerText = `${displayedEnergy}`;
-	// }
-
-	const trainCost = calculateTrainCost();
-	const speedUpgradeCost = calculateSpeedUpgradeCost();
-	const clickUpgradeCost = calculateClickUpgradeCost();
+		const trainCost = calculateTrainCost();
+		const speedUpgradeCost = calculateSpeedUpgradeCost();
+		const clickUpgradeCost = calculateClickUpgradeCost();
+		
+		trainButtonElm.classList.toggle("enabled", energy >= trainCost);
+		upgradeSpeedButtonElm.classList.toggle("enabled", energy >= speedUpgradeCost);
+		upgradeClickButtonElm.classList.toggle("enabled", energy >= clickUpgradeCost);
+		trainButtonBarElm.style.width = `${Math.min(1, energy/trainCost)*100}%`;
+		upgradeSpeedButtonBarElm.style.width = `${Math.min(1, energy/speedUpgradeCost)*100}%`;
+		upgradeClickButtonBarElm.style.width = `${Math.min(1, energy/clickUpgradeCost)*100}%`;
 	
-	trainButtonElm.classList.toggle("enabled", energy >= trainCost);
-	upgradeSpeedButtonElm.classList.toggle("enabled", energy >= speedUpgradeCost);
-	upgradeClickButtonElm.classList.toggle("enabled", energy >= clickUpgradeCost);
-	trainButtonLabelElm.style.width = `${Math.min(1, energy/trainCost)*100}%`;
-	upgradeSpeedButtonLabelElm.style.width = `${Math.min(1, energy/speedUpgradeCost)*100}%`;
-	upgradeClickButtonLabelElm.style.width = `${Math.min(1, energy/clickUpgradeCost)*100}%`;
-
-
-	if (energy < PHASE_1_THRESHOLD) {
-		// Phase 1, awakening
-		document.title = "PHASE1: " + energy;
-		document.body.className = "phase1"
-		canSpawnShades = false;
-		const bgFade = 0.5;
-		const phaseProgress = energy/PHASE_1_THRESHOLD;
-		const r = PHASE_1_MIN_R + Math.max(PHASE_1_MIN_R, phaseProgress * (PHASE_1_MAX_R - PHASE_1_MIN_R));
-		const g = PHASE_1_MIN_G + Math.max(PHASE_1_MIN_G, phaseProgress * (PHASE_1_MAX_G - PHASE_1_MIN_G));
-		const b = PHASE_1_MIN_B + Math.max(PHASE_1_MIN_B, phaseProgress * (PHASE_1_MAX_B - PHASE_1_MIN_B));
-		const a = PHASE_1_MIN_A + Math.max(PHASE_1_MIN_A, phaseProgress * (PHASE_1_MAX_A - PHASE_1_MIN_A));
-		mainNode.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
-		// console.log(`radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`);
-		document.body.style.background = `radial-gradient(rgb(${r*bgFade}, ${g*bgFade}, ${b*bgFade}), rgb(0,0,0))`;
-		//document.body.style.background = `radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`;
-		const progressText = `${Math.round(phaseProgress*100)}%`;
-		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
-		document.querySelectorAll(".shade-container").forEach(elm => {elm.classList.add("explode")});
-
-	} else if (energy > PHASE_1_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD) {
-		// Phase 2, dancing
-		document.title = "PHASE2: " + energy;
-		document.body.className = "phase2";
-		canSpawnShades = true;
-		const phaseProgress = (energy-PHASE_1_THRESHOLD)/PHASE_2_THRESHOLD;
-		const r = PHASE_2_MIN_R + Math.max(PHASE_2_MIN_R, phaseProgress * (PHASE_2_MAX_R - PHASE_2_MIN_R));
-		const g = PHASE_2_MIN_G + Math.max(PHASE_2_MIN_G, phaseProgress * (PHASE_2_MAX_G - PHASE_2_MIN_G));
-		const b = PHASE_2_MIN_B + Math.max(PHASE_2_MIN_B, phaseProgress * (PHASE_2_MAX_B - PHASE_2_MIN_B));
-		const a = PHASE_2_MIN_A + Math.max(PHASE_2_MIN_A, phaseProgress * (PHASE_2_MAX_A - PHASE_2_MIN_A));
-		const radius = Math.max(5, (50-50*phaseProgress));
-		mainNode.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
-		// mainNode.style.borderTopLeftRadius = `${radius}% ${radius}%`;
-		document.querySelectorAll(".satellite-node.collecting").forEach(satelliteNode => {
-			satelliteNode.classList.remove("collecting");
-			satelliteNode.style.transform = ``;
-		});
-		mainNode.style.borderRadius = `${radius}% ${100-radius}% 50% 50% / ${radius}% 50% 50% ${100-radius}%`;
-		const progressText = `${Math.round(phaseProgress*100)}%`
-		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
-
-	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
-		// Phase 3, Harvesting
-		document.title = "PHASE3: " + energy;
-		document.body.className = "phase3"
-		canSpawnShades = true;
-		const phaseProgress = (energy-PHASE_2_THRESHOLD-PHASE_1_THRESHOLD)/PHASE_3_THRESHOLD;
-		const r = PHASE_3_MIN_R + Math.max(PHASE_3_MIN_R, phaseProgress * (PHASE_3_MAX_R - PHASE_3_MIN_R));
-		const g = PHASE_3_MIN_G + Math.max(PHASE_3_MIN_G, phaseProgress * (PHASE_3_MAX_G - PHASE_3_MIN_G));
-		const b = PHASE_3_MIN_B + Math.max(PHASE_3_MIN_B, phaseProgress * (PHASE_3_MAX_B - PHASE_3_MIN_B));
-		const a = PHASE_3_MIN_A + Math.max(PHASE_3_MIN_A, phaseProgress * (PHASE_3_MAX_A - PHASE_3_MIN_A));
-
-		mainNode.style.backgroundColor = `rgba(${PHASE_2_MAX_R},${PHASE_2_MAX_G},${PHASE_2_MAX_B},${PHASE_2_MAX_A})`;
-		mainNode.style.borderRadius = `${5}% ${100-5}% 50% 50% / ${5}% 50% 50% ${100-5}%`;
-
-
-		mainBud.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
-		document.querySelectorAll(".satellite-node").forEach(satelliteNode => {
-			satelliteNode.classList.add("collecting");
-			satelliteNode.style.transform = `translate(0, ${parseFloat(satelliteNode.parentElement.style.width)/4}px) scale(0.5)`;
-		});
-		const progressText = `${Math.round(phaseProgress*100)}%`
-		if (progressElm.innerText != progressText) progressElm.innerText = progressText;
-
-	} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
-		// Phase 4, Victory
-		canSpawnShades = false;
-		document.title = "PHASE4: " + energy;
-		document.body.className = "phase4"
-		running = false;
-		document.querySelectorAll(".satellite-node").forEach(satelliteNode => {
-			satelliteNode.classList.remove("collecting");
-			satelliteNode.classList.add("leaving");
-			const leavingTime = Math.max(LEAVING_TIME_MIN, Math.random()*LEAVING_TIME_MAX);
-			satelliteNode.style.transition = `transform ${leavingTime}s, opacity ${leavingTime}s`;
-			satelliteNode.style.transform = ``;
-			
-		});
+	
+		if (energy < PHASE_1_THRESHOLD) {
+			// Phase 1, awakening
+			document.title = "PHASE1: " + energy;
+			document.body.className = "phase1"
+			canSpawnShades = false;
+			const bgFade = 0.5;
+			const phaseProgress = energy/PHASE_1_THRESHOLD;
+			const r = PHASE_1_MIN_R + Math.max(PHASE_1_MIN_R, phaseProgress * (PHASE_1_MAX_R - PHASE_1_MIN_R));
+			const g = PHASE_1_MIN_G + Math.max(PHASE_1_MIN_G, phaseProgress * (PHASE_1_MAX_G - PHASE_1_MIN_G));
+			const b = PHASE_1_MIN_B + Math.max(PHASE_1_MIN_B, phaseProgress * (PHASE_1_MAX_B - PHASE_1_MIN_B));
+			const a = PHASE_1_MIN_A + Math.max(PHASE_1_MIN_A, phaseProgress * (PHASE_1_MAX_A - PHASE_1_MIN_A));
+			mainNode.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
+			// console.log(`radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`);
+			document.body.style.background = `radial-gradient(rgb(${r*bgFade}, ${g*bgFade}, ${b*bgFade}), rgb(0,0,0))`;
+			//document.body.style.background = `radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`;
+			const progressText = `${Math.round(phaseProgress*100)}%`;
+			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
+			destroyAllShades();
+	
+		} else if (energy > PHASE_1_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD) {
+			// Phase 2, dancing
+			document.title = "PHASE2: " + energy;
+			document.body.className = "phase2";
+			canSpawnShades = true;
+			const phaseProgress = (energy-PHASE_1_THRESHOLD)/PHASE_2_THRESHOLD;
+			const r = PHASE_2_MIN_R + Math.max(PHASE_2_MIN_R, phaseProgress * (PHASE_2_MAX_R - PHASE_2_MIN_R));
+			const g = PHASE_2_MIN_G + Math.max(PHASE_2_MIN_G, phaseProgress * (PHASE_2_MAX_G - PHASE_2_MIN_G));
+			const b = PHASE_2_MIN_B + Math.max(PHASE_2_MIN_B, phaseProgress * (PHASE_2_MAX_B - PHASE_2_MIN_B));
+			const a = PHASE_2_MIN_A + Math.max(PHASE_2_MIN_A, phaseProgress * (PHASE_2_MAX_A - PHASE_2_MIN_A));
+			const radius = Math.max(5, (50-50*phaseProgress));
+			mainNode.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
+			// mainNode.style.borderTopLeftRadius = `${radius}% ${radius}%`;
+			document.querySelectorAll(".satellite-node.collecting").forEach(satelliteNode => {
+				satelliteNode.classList.remove("collecting");
+				satelliteNode.style.transform = ``;
+			});
+			mainNode.style.borderRadius = `${radius}% ${100-radius}% 50% 50% / ${radius}% 50% 50% ${100-radius}%`;
+			const progressText = `${Math.round(phaseProgress*100)}%`
+			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
+	
+		} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
+			// Phase 3, Harvesting
+			document.title = "PHASE3: " + energy;
+			document.body.className = "phase3"
+			canSpawnShades = true;
+			const phaseProgress = (energy-PHASE_2_THRESHOLD-PHASE_1_THRESHOLD)/PHASE_3_THRESHOLD;
+			const r = PHASE_3_MIN_R + Math.max(PHASE_3_MIN_R, phaseProgress * (PHASE_3_MAX_R - PHASE_3_MIN_R));
+			const g = PHASE_3_MIN_G + Math.max(PHASE_3_MIN_G, phaseProgress * (PHASE_3_MAX_G - PHASE_3_MIN_G));
+			const b = PHASE_3_MIN_B + Math.max(PHASE_3_MIN_B, phaseProgress * (PHASE_3_MAX_B - PHASE_3_MIN_B));
+			const a = PHASE_3_MIN_A + Math.max(PHASE_3_MIN_A, phaseProgress * (PHASE_3_MAX_A - PHASE_3_MIN_A));
+	
+			mainNode.style.backgroundColor = `rgba(${PHASE_2_MAX_R},${PHASE_2_MAX_G},${PHASE_2_MAX_B},${PHASE_2_MAX_A})`;
+			mainNode.style.borderRadius = `5% 95% 50% 50% / 5% 50% 50% 95%`;
+			mainBud.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
+			document.querySelectorAll(".satellite-node").forEach(satelliteNode => {
+				satelliteNode.classList.add("collecting");
+				satelliteNode.style.transform = `translate(0, ${parseFloat(satelliteNode.parentElement.style.width)/4}px) scale(0.5)`;
+			});
+			const progressText = `${Math.round(phaseProgress*100)}%`
+			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
+	
+		} else if (energy > PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
+			// Phase 4, Victory
+			running = false;
+			canSpawnShades = false;
+			destroyAllShades();
+			mainNode.style.borderRadius = `5% 95% 50% 50% / 5% 50% 50% 95%`;
+			document.title = "PHASE4: " + energy;
+			document.body.className = "phase4"
+			document.querySelectorAll(".satellite-node").forEach(satelliteNode => {
+				satelliteNode.classList.remove("collecting");
+				satelliteNode.classList.add("leaving");
+				const leavingTime = Math.max(LEAVING_TIME_MIN, Math.random()*LEAVING_TIME_MAX);
+				satelliteNode.style.transition = `transform ${leavingTime}s, opacity ${leavingTime}s`;
+				satelliteNode.style.transform = ``;
+			});
+			window.setTimeout(displayOutroScreen, 3000);
+		}
 	}
-
 	window.requestAnimationFrame(tick);
 };
 Init();

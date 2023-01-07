@@ -5,8 +5,44 @@
   --button-width: 228px;
 }
 
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes morph {
+  0% {
+    border-radius: 54% 46% 70% 30% / 57% 30% 70% 43% 
+  }
+
+  20% {
+    border-radius: 67% 33% 70% 30% / 42% 56% 44% 58%;
+  }
+
+  40% {
+    border-radius: 61% 39% 31% 69% / 25% 38% 62% 75%;
+  }
+
+  60% {
+    border-radius: 79% 21% 69% 31% / 58% 69% 31% 42%;
+  }
+
+  80% {
+    border-radius: 41% 59% 43% 57% / 77% 34% 66% 23%;
+  }
+
+  100% {
+    border-radius: 54% 46% 70% 30% / 57% 30% 70% 43%;
+  }
+}
+
 body {
-	background-color: radial-gradient(rgb(5, 5, 25), rgb(0,0,0));
+	background: radial-gradient(rgb(5, 5, 25), rgb(0,0,0));
 	/*background: radial-gradient(rgb(0, 0, 25), #000);
 	background: radial-gradient(rgb(25, 25, 100), #000);
 	background: radial-gradient(rgb(150, 150, 255), #000);*/
@@ -18,6 +54,50 @@ body {
 	height: 100vh;
 	transition: background 2s;
 }
+
+#game {
+	display: none;
+	width: 100vw;
+	height: 100vh;
+	position: relative;
+}
+
+#intro, #outro {
+	width: 100vw;
+	height: 50vh;
+	position: fixed;
+	top: 50%;
+	margin-top: -25vh;
+	display: none;
+	z-index: 5000;
+}
+
+body[data-screen="intro"] #intro,
+body[data-screen="outro"] #outro,
+body[data-screen="game"] #game {
+	display: block;
+}
+
+
+h1, p, span {
+	color: #fff;
+	font-size: 16px;
+	font-family: sans-serif;
+	max-width: 480px;
+	margin: 10px auto;
+	text-align: center;
+}
+
+span {
+	text-transform: uppercase;
+	font-size: 12px;
+
+}
+
+h1 {
+	font-size: 26px;
+}
+
 
 html {
 	cursor: url(cursor.png), auto;
@@ -38,7 +118,7 @@ html {
 	height: 5px;
 	border-radius: 100%;
 	background: rgba(255, 255, 255, 1.0);
-	animation: flicker;
+	animation: cursor-flicker;
 	animation-duration: 1s;
 	animation-iteration-count: infinite;
 	animation-timing-function: linear;
@@ -53,7 +133,7 @@ html {
 	height: 5px;
 	border-radius: 100%;
 	background: rgba(255, 255, 150, 0.0);
-	animation: flicker;
+	animation: cursor-flicker;
 	animation-duration: 1s;
 	animation-iteration-count: infinite;
 	animation-timing-function: linear;
@@ -69,10 +149,23 @@ html {
 	opacity: 1;
 }
 
+@keyframes cursor-flicker {
+  0% {
+    box-shadow: 0 0 5px 5px rgba(255, 255, 255, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.7);
+  }
+
+  100% {
+    box-shadow: 0 0 5px 5px rgba(255, 255, 255, 0.2);
+  }
+}
+
 div {
 	position: absolute;
 	display: block;
-	border-radius: 50%;
 }
 
 #buttons {
@@ -104,6 +197,13 @@ button {
 	overflow: hidden;
 }
 
+button u {
+	color: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	text-decoration: none;
+}
+
 button.enabled {
 	border-color: rgba(255, 255, 255, 0.6);
 	color: rgba(255, 255, 255, 0.6);
@@ -114,9 +214,15 @@ button:hover {
 	border-color: rgba(255, 255, 255, 0.4);
 }
 
+
 button.enabled:hover {
 	border-color: rgba(255, 255, 255, 0.8);
 	color: rgba(255, 255, 255, 0.8);
+}
+
+button.enabled:hover u {
+	text-decoration: underline;
+	color: rgba(255, 255, 255, 1)
 }
 
 button.enabled:active {
@@ -125,7 +231,7 @@ button.enabled:active {
 	color: rgba(255, 255, 255, 1);
 }
 
-button span {
+button .bar {
 	position: absolute;
 	left: 0;
 	bottom: 0;
@@ -136,7 +242,7 @@ button span {
 	transition: width 0.3s;
 }
 
-button:hover span {
+button:hover .bars {
 	background-color: rgba(255, 255, 255, 0.6);
 }
 
@@ -150,6 +256,7 @@ button:hover span {
 }
 
 .node {
+	border-radius: 50%;
 	width: var(--node-size);
 	height: var(--node-size);
 	top: 50%;
@@ -316,6 +423,25 @@ button:hover span {
 	opacity: 0;
 }
 
+
+@keyframes blob-flicker {
+  0% {
+    box-shadow:
+    	0 0 5px 5px rgba(255, 255, 200, 0.2),
+    	0 0 0px 2px rgba(255, 255, 200, 1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px 5px rgba(255, 255, 200, 0.7);
+  }
+
+  100% {
+    box-shadow:
+    	0 0 5px 5px rgba(255, 255, 200, 0.2),
+    	0 0 0px 2px rgba(255, 255, 200, 1);
+  }
+}
+
 .shade-container {
 	width: var(--shade-size);
 	height: var(--shade-size);
@@ -346,7 +472,6 @@ button:hover span {
 	animation: rotate 5s, morph 4s, shade-flicker 1s;
 	animation-iteration-count: infinite;
 	animation-timing-function: linear;
-	z-index: 9997;
 }
 
 .shade:hover::after {
@@ -355,34 +480,6 @@ button:hover span {
 
 .shade:active {
 	filter: invert(50%);
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes blob-flicker {
-  0% {
-    box-shadow:
-    	0 0 5px 5px rgba(255, 255, 200, 0.2),
-    	0 0 0px 2px rgba(255, 255, 200, 1);
-  }
-
-  50% {
-    box-shadow: 0 0 20px 5px rgba(255, 255, 200, 0.7);
-  }
-
-  100% {
-    box-shadow:
-    	0 0 5px 5px rgba(255, 255, 200, 0.2),
-    	0 0 0px 2px rgba(255, 255, 200, 1);
-  }
 }
 
 @keyframes shade-flicker {
@@ -403,45 +500,5 @@ button:hover span {
     box-shadow:
     	0 0 50px 50px rgba(0, 0, 0, 1),
     	0 0 20px 20px rgba(0, 0, 0, 1);
-  }
-}
-
-@keyframes flicker {
-  0% {
-    box-shadow: 0 0 5px 5px rgba(255, 255, 255, 0.2);
-  }
-
-  50% {
-    box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.7);
-  }
-
-  100% {
-    box-shadow: 0 0 5px 5px rgba(255, 255, 255, 0.2);
-  }
-}
-
-@keyframes morph {
-  0% {
-    border-radius: 54% 46% 70% 30% / 57% 30% 70% 43% 
-  }
-
-  20% {
-    border-radius: 67% 33% 70% 30% / 42% 56% 44% 58%;
-  }
-
-  40% {
-    border-radius: 61% 39% 31% 69% / 25% 38% 62% 75%;
-  }
-
-  60% {
-    border-radius: 79% 21% 69% 31% / 58% 69% 31% 42%;
-  }
-
-  80% {
-    border-radius: 41% 59% 43% 57% / 77% 34% 66% 23%;
-  }
-
-  100% {
-    border-radius: 54% 46% 70% 30% / 57% 30% 70% 43%;
   }
 }
