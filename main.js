@@ -31,7 +31,7 @@ const progressElm = document.querySelector("#progress");
 const SATELLITE_BASE_DURATION = 1.5;
 const ORBIT_ORBIT_SIZE = 240;
 const ORBIT_SCALE = 0.7;
-const ORBIT_MAX_COUNT_MIN = 25;
+const ORBIT_MAX_COUNT_MIN = 10;
 const ORBIT_MAX_COUNT_SCALE = 1;
 
 const LEAVING_TIME_MIN = 15;
