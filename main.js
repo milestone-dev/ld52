@@ -13,6 +13,14 @@ const upgradeClickButtonElm = document.querySelector("#upgradeClick");
 const trainButtonBarElm = document.querySelector("#train .bar");
 const upgradeSpeedButtonBarElm = document.querySelector("#upgradeSpeed .bar");
 const upgradeClickButtonBarElm = document.querySelector("#upgradeClick .bar");
+
+const audioElements = [
+	document.getElementById("a00"),
+	// document.getElementById("a01"),
+	// document.getElementById("a02"),
+	// document.getElementById("a03"),
+];
+
 const introElm = document.querySelector("#intro");
 const outroElm = document.querySelector("#outro");
 const cursorElm = document.querySelector("#cursor");
@@ -55,7 +63,7 @@ var gameCompleteDate = null;
 const PHASE_1_THRESHOLD = 500;
 const PHASE_2_THRESHOLD = 1000;
 const PHASE_3_THRESHOLD = 3000;
-const PHASE_4_THRESHOLD = 4000;
+const PHASE_4_THRESHOLD = 4500;
 
 const PHASE_1_MIN_R = 10;
 const PHASE_1_MIN_G = 10;
@@ -120,15 +128,38 @@ const createClickParticle = function(x, y) {
 	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
 }
 
+const setMusicChannelsVolume = function() {
+	const ch = parseInt(Math.floor(energy/PHASE_3_THRESHOLD))
+	const chunk = PHASE_3_THRESHOLD/audioElements.length;
+	for (var i = 1; i < audioElements.length; i++) {
+		var volume = 0;
+		const lastEnergyChunk = (i-1)*chunk;
+		const chunkPart = energy - lastEnergyChunk;	
+		if (energy >= i*chunk) volume = 1;
+		else if(energy >= lastEnergyChunk) {
+			volume = chunkPart/chunk;
+		}
+		audioElements[i].volume = volume;
+	}
+}
+
+const playMusicChannels = function(play) {
+	audioElements.forEach(audio => {
+		if (play) audio.play()
+		else audio.stop()
+	});
+}
+
 const displayIntroScreen = function() {
 	document.body.dataset.screen = "intro";
 }
 
 const startGame = function() {
+	playMusicChannels(true);
 	document.body.dataset.screen = "game";
 	gameStartDate = new Date();
 	running = true;
-	createNode(); 
+	createNode();
 }
 
 const displayOutroScreen = function() {
@@ -320,7 +351,6 @@ const onShadeSpawnTimerCompete = function() {
 }
 
 const onKeyUp = function(evt) {
-	console.log(evt.key);
 	const key = evt.key.toLowerCase();
 	if (evt.key == "f") trainButtonElm.click();
 	else if (evt.key == "s") upgradeSpeedButtonElm.click();
@@ -382,6 +412,8 @@ const tick = function() {
 		// 	if (energy < displayedEnergy) displayedEnergy--;
 		// 	// progressElm.innerText = `${displayedEnergy}`;
 		// }
+
+		setMusicChannelsVolume();
 	
 		const trainCost = calculateTrainCost();
 		const speedUpgradeCost = calculateSpeedUpgradeCost();
