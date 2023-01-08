@@ -45,7 +45,7 @@ var speedUpgradeLevel = 1;
 
 const CLICK_ENERGY_BASE = 1;
 const CLICK_DAMAGE = 13;
-const CLICK_COST_CONST = 0.12;
+const CLICK_COST_CONST = 0.25;
 const CLICK_POWER_INCREASE = 0.4;
 var clickUpgradeLevel = 1;
 
@@ -167,7 +167,7 @@ const createClickParticle = function(x, y) {
 	elm.style.top = `${y}px`;
 	elm.style.left = `${x}px`;
 	document.body.appendChild(elm);
-	window.setTimeout(_ => {elm.classList.remove("new")}, 1);
+	window.setTimeout(_ => {elm.classList.remove("new")}, 50);
 }
 
 const setMusicChannelsVolume = function() {
@@ -422,6 +422,7 @@ const onShadeSpawnTimerCompete = function() {
 }
 
 const onKeyUp = function(evt) {
+	if (!running) return;
 	const key = evt.key.toLowerCase();
 	if (evt.key == "f") trainButtonElm.click();
 	else if (evt.key == "s") upgradeSpeedButtonElm.click();
