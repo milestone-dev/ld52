@@ -4,6 +4,7 @@ var energy = 0;
 var displayedEnergy = -1;
 var mainNode;
 var mainBud;
+var petals = [];
 var currentOrbit;
 const ENERGY_PER_CYCLE = 1;
 const gameElm = document.querySelector("#game");
@@ -56,8 +57,8 @@ const SHADE_DAMAGE = 50;
 const SHADE_BASE_HP = 50;
 const SHADE_HP_SCALE = 0.05;
 const SHADE_MAX_COUNT = 4;
-const SHADE_SPAWN_TIMER_MIN = 30000;
-const SHADE_SPAWN_TIMER_MAX = 60000;
+const SHADE_SPAWN_TIMER_MIN = 15000;
+const SHADE_SPAWN_TIMER_MAX = 45000;
 var shadesCreated = 0;
 
 var canSpawnShades = false;
@@ -121,6 +122,20 @@ const calculateClickPower = function() {return 1 + clickUpgradeLevel * CLICK_POW
 const calculateBlobEnergy = function() {
 	return (calculateTrainCost() + calculateSpeedUpgradeCost() + calculateClickUpgradeCost()) / 3 * (Math.random() * BLOB_ENERGY_MULTIPLIER_CONST);
 }
+
+const setPetalRadius = function(radius) {
+	document.querySelectorAll(".petal").forEach(petalElm => {
+		petalElm.style.borderRadius = radius;
+	});
+}
+
+const setPetalColor = function(color) {
+	document.querySelectorAll(".petal").forEach(petalElm => {
+		petalElm.style.backgroundColor = color;
+	});
+	// mainNode.style.backgroundColor = color;
+}
+
 
 const calculateClickDamage = function() {return calculateClickPower()}
 
@@ -252,6 +267,13 @@ const createNode = function() {
 	const elm = document.createElement("div");
 	mainNode = elm;
 	elm.classList.add("node");
+
+	for (var i = 0; i < 4; i++) {
+		const petalElm = document.createElement("div");
+		petalElm.classList.add("petal");
+		elm.appendChild(petalElm);
+	}
+
 	const budElm = document.createElement("div");		
 	budElm.classList.add("bud");
 	elm.appendChild(budElm);
@@ -461,7 +483,7 @@ const tick = function() {
 	
 		if (energy < PHASE_1_THRESHOLD) {
 			// Phase 1, awakening
-			document.title = "PHASE1: " + energy;
+			//document.title = "PHASE1: " + energy;
 			document.body.className = "phase1"
 			canSpawnShades = false;
 			const bgFade = 0.5;
@@ -470,16 +492,16 @@ const tick = function() {
 			const g = PHASE_1_MIN_G + Math.max(PHASE_1_MIN_G, phaseProgress * (PHASE_1_MAX_G - PHASE_1_MIN_G));
 			const b = PHASE_1_MIN_B + Math.max(PHASE_1_MIN_B, phaseProgress * (PHASE_1_MAX_B - PHASE_1_MIN_B));
 			const a = PHASE_1_MIN_A + Math.max(PHASE_1_MIN_A, phaseProgress * (PHASE_1_MAX_A - PHASE_1_MIN_A));
-			mainNode.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
+			setPetalColor(`rgba(${r},${g},${b},${a})`);
 			// console.log(`radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`);
 			document.body.style.background = `radial-gradient(rgb(${r*bgFade}, ${g*bgFade}, ${b*bgFade}), rgb(0,0,0))`;
 			//document.body.style.background = `radial-gradient(rgb(${rg}, ${rg}, ${b}), rgb(0,0,0));`;
-			mainNode.style.borderRadius = `50% 50% 50% 50% / 50% 50% 50% 50%`;
-			const progressText = `${Math.round(phaseProgress*100)}% (${Math.round(energy)})`;
+			setPetalRadius(`50% 50% 50% 50% / 50% 50% 50% 50%`);
+			const progressText = `${Math.round(phaseProgress*100)}%`;
 			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 		} else if (energy >= PHASE_1_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD) {
 			// Phase 2, dancing
-			document.title = "PHASE2: " + energy;
+			//document.title = "PHASE2: " + energy;
 			document.body.className = "phase2";
 			canSpawnShades = true;
 			const phaseProgress = (energy-PHASE_1_THRESHOLD)/PHASE_2_THRESHOLD;
@@ -488,19 +510,19 @@ const tick = function() {
 			const b = PHASE_2_MIN_B + Math.max(PHASE_2_MIN_B, phaseProgress * (PHASE_2_MAX_B - PHASE_2_MIN_B));
 			const a = PHASE_2_MIN_A + Math.max(PHASE_2_MIN_A, phaseProgress * (PHASE_2_MAX_A - PHASE_2_MIN_A));
 			const radius = Math.max(5, (50-50*phaseProgress));
-			mainNode.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
+			setPetalColor(`rgba(${r},${g},${b},${a})`);
 			// mainNode.style.borderTopLeftRadius = `${radius}% ${radius}%`;
 			document.querySelectorAll(".satellite-node.collecting").forEach(satelliteNode => {
 				satelliteNode.classList.remove("collecting");
 				satelliteNode.style.transform = ``;
 			});
-			mainNode.style.borderRadius = `${radius}% ${100-radius}% 50% 50% / ${radius}% 50% 50% ${100-radius}%`;
-			const progressText = `${Math.round(phaseProgress*100)}% (${Math.round(energy)})`
+			setPetalRadius(`${radius}% ${100-radius}% 50% 50% / ${radius}% 50% 50% ${100-radius}%`);
+			const progressText = `${Math.round(phaseProgress*100)}%`
 			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 	
 		} else if (energy >= PHASE_1_THRESHOLD+PHASE_2_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
 			// Phase 3, Harvesting
-			document.title = "PHASE3: " + energy;
+			//document.title = "PHASE3: " + energy;
 			document.body.className = "phase3"
 			canSpawnShades = true;
 			const phaseProgress = (energy-PHASE_2_THRESHOLD-PHASE_1_THRESHOLD)/PHASE_3_THRESHOLD;
@@ -509,14 +531,15 @@ const tick = function() {
 			const b = PHASE_3_MIN_B + Math.max(PHASE_3_MIN_B, phaseProgress * (PHASE_3_MAX_B - PHASE_3_MIN_B));
 			const a = PHASE_3_MIN_A + Math.max(PHASE_3_MIN_A, phaseProgress * (PHASE_3_MAX_A - PHASE_3_MIN_A));
 	
-			mainNode.style.backgroundColor = `rgba(${PHASE_2_MAX_R},${PHASE_2_MAX_G},${PHASE_2_MAX_B},${PHASE_2_MAX_A})`;
-			mainNode.style.borderRadius = `5% 95% 50% 50% / 5% 50% 50% 95%`;
+			setPetalColor(`rgba(${PHASE_2_MAX_R},${PHASE_2_MAX_G},${PHASE_2_MAX_B},${PHASE_2_MAX_A})`);
+
+			setPetalRadius(`5% 95% 50% 50% / 5% 50% 50% 95%`);
 			mainBud.style.backgroundColor = `rgba(${r},${g},${b},${a})`;
 			document.querySelectorAll(".satellite-node").forEach(satelliteNode => {
 				satelliteNode.classList.add("collecting");
 				satelliteNode.style.transform = `translate(0, ${parseFloat(satelliteNode.parentElement.style.width)/4}px) scale(0.5)`;
 			});
-			const progressText = `${Math.round(phaseProgress*100)}% (${Math.round(energy)})`
+			const progressText = `${Math.round(phaseProgress*100)}%`
 			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 	
 		} else if (energy >= PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
@@ -524,8 +547,8 @@ const tick = function() {
 			running = false;
 			canSpawnShades = false;
 			destroyAllShades();
-			mainNode.style.borderRadius = `5% 95% 50% 50% / 5% 50% 50% 95%`;
-			document.title = "PHASE4: " + energy;
+			setPetalRadius(`5% 95% 50% 50% / 5% 50% 50% 95%`);
+			//document.title = "PHASE4: " + energy;
 			document.body.className = "phase4"
 			document.querySelectorAll(".satellite-node").forEach(satelliteNode => {
 				satelliteNode.classList.remove("collecting");
@@ -534,7 +557,7 @@ const tick = function() {
 				satelliteNode.style.transition = `transform ${leavingTime}s, opacity ${leavingTime}s`;
 				satelliteNode.style.transform = ``;
 			});
-			window.setTimeout(displayOutroScreen, 3000);
+			window.setTimeout(displayOutroScreen, 5000);
 		}
 	}
 	window.requestAnimationFrame(tick);

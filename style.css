@@ -86,16 +86,22 @@ h1, p, span {
 	max-width: 480px;
 	margin: 10px auto;
 	text-align: center;
+	line-height: 150%;
+	display: block;
+	color: rgba(255, 255, 255, 0.75);
 }
 
 span {
+	margin: 32px auto;
 	text-transform: uppercase;
-	font-size: 12px;
+	font-size: 14px;
+	color: rgba(255, 255, 255, 1);
 
 }
 
 h1 {
 	font-size: 26px;
+	margin: 0 auto 32px auto;
 }
 
 
@@ -264,7 +270,7 @@ button:hover .bars {
 	left: 50%;
 	margin-left: calc(var(--node-size)/2*-1);
 	margin-top: calc(var(--node-size)/2*-1);
-	background: rgba(255, 255, 255, 0);
+/*	background: rgba(255, 255, 255, 0);*/
 	pointer-events: all;
 	transition: transform 3s, background-color 1s, border-radius 2s;
 	transform: rotate(45deg);
@@ -274,10 +280,28 @@ button:hover .bars {
 		inset 0 0 20px rgba(0, 0, 25, 0.2);*/
 }
 
+.petal {
+	position: absolute;
+	display: block;
+	top: 50%;
+	left: 50%;
+	margin-left: calc(var(--node-size)/2*-1);
+	margin-top: calc(var(--node-size)/2*-1);
+	width: calc(var(--node-size));
+	height: calc(var(--node-size));
+	line-height: calc(var(--node-size));
+	border-radius: 100%;
+	transition: transform 3s, background-color 1s, border-radius 2s;
+}
+
+.petal:nth-of-type(1) {transform: rotate(0); }
+.petal:nth-of-type(2) {transform: rotate(90deg); }
+.petal:nth-of-type(3) {transform: rotate(180deg); }
+.petal:nth-of-type(4) {transform: rotate(270deg); }
+
 .bud {
 	position: absolute;
 	display: block;
-	content: "";
 	top: 50%;
 	left: 50%;
 	margin-left: calc(var(--node-size)/4*-1);
