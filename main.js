@@ -37,29 +37,29 @@ const ORBIT_MAX_COUNT_SCALE = 1;
 const LEAVING_TIME_MIN = 15;
 const LEAVING_TIME_MAX = 25;
 
-const TRAIN_COST_CONST = 0.1;
+const TRAIN_COST_CONST = 0.06;
 
-const SPEED_COST_CONST = 0.15;
+const SPEED_COST_CONST = 0.12;
 const SPEED_UPGRADE = 0.005;
 var speedUpgradeLevel = 1;
 
 const CLICK_ENERGY_BASE = 1;
 const CLICK_DAMAGE = 13;
-const CLICK_COST_CONST = 0.4;
+const CLICK_COST_CONST = 0.12;
 const CLICK_POWER_INCREASE = 0.4;
 var clickUpgradeLevel = 1;
 
-const BLOB_ENERGY_MULTIPLIER_CONST = 0.5;
+const BLOB_ENERGY_MULTIPLIER_CONST = 0.4;
 const BLOB_SPAWN_TIMER_MIN = 5000;
-const BLOB_SPAWN_TIMER_MAX = 30000;
-const BLOB_MAX_COUNT = 5;
+const BLOB_SPAWN_TIMER_MAX = 15000;
+const BLOB_MAX_COUNT = 10;
 
 const SHADE_DAMAGE = 50;
 const SHADE_BASE_HP = 20;
 const SHADE_HP_SCALE = 0.09;
 const SHADE_MAX_COUNT = 4;
 const SHADE_SPAWN_TIMER_MIN = 10000;
-const SHADE_SPAWN_TIMER_MAX = 35000; 
+const SHADE_SPAWN_TIMER_MAX = 20000; 
 var shadesCreated = 0;
 
 var canSpawnShades = false;
@@ -235,8 +235,8 @@ const createBlobOrbit = function() {
 	elm.classList.add("blob-orbit");
 	var x = Math.random()*100;
 	var y = Math.random()*100;
-	if (Math.random() > 0.5) x = (x < 50) ? 1 : 99;
-	else y = (y < 50) ? 1 : 99;
+	if (Math.random() > 0.5) x = (x < 50) ? 5 : 95;
+	else y = (y < 50) ? 5 : 95;
 	elm.style.top = `${y*window.innerHeight/100}px`;
 	elm.style.left = `${x*window.innerWidth/100}px`;
 	const w = Math.max(30, Math.random()*50);
