@@ -6,6 +6,7 @@ var mainNode;
 var mainBud;
 var petals = [];
 var currentOrbit;
+var activeMusicChannel = -1;
 const ENERGY_PER_CYCLE = 1;
 const gameElm = document.querySelector("#game");
 const trainButtonElm = document.querySelector("#train");
@@ -15,7 +16,7 @@ const trainButtonBarElm = document.querySelector("#train .bar");
 const upgradeSpeedButtonBarElm = document.querySelector("#upgradeSpeed .bar");
 const upgradeClickButtonBarElm = document.querySelector("#upgradeClick .bar");
 
-const audioElements = [
+const musicAudioElements = [
 	document.getElementById("a00"),
 	document.getElementById("a01"),
 	document.getElementById("a02"),
@@ -54,11 +55,11 @@ const BLOB_SPAWN_TIMER_MAX = 30000;
 const BLOB_MAX_COUNT = 5;
 
 const SHADE_DAMAGE = 50;
-const SHADE_BASE_HP = 50;
-const SHADE_HP_SCALE = 0.05;
+const SHADE_BASE_HP = 20;
+const SHADE_HP_SCALE = 0.09;
 const SHADE_MAX_COUNT = 4;
-const SHADE_SPAWN_TIMER_MIN = 15000;
-const SHADE_SPAWN_TIMER_MAX = 45000;
+const SHADE_SPAWN_TIMER_MIN = 10000;
+const SHADE_SPAWN_TIMER_MAX = 35000; 
 var shadesCreated = 0;
 
 var canSpawnShades = false;
@@ -156,6 +157,10 @@ const calculateClickUpgradeCost = function(override_level) {
 }
 
 const createClickParticle = function(x, y) {
+	const a = new Audio("click.mp3");
+	a.volume = 0.7;
+	a.playbackRate = 0.5 + Math.random() * 1;
+	a.play();
 	const elm = document.createElement("div");
 	elm.classList.add("particle");
 	elm.classList.add("new");
@@ -167,8 +172,8 @@ const createClickParticle = function(x, y) {
 
 const setMusicChannelsVolume = function() {
 	const ch = parseInt(Math.floor(energy/PHASE_3_THRESHOLD))
-	const chunk = PHASE_3_THRESHOLD/audioElements.length;
-	for (var i = 1; i < audioElements.length; i++) {
+	const chunk = PHASE_3_THRESHOLD/musicAudioElements.length;
+	for (var i = 1; i < musicAudioElements.length; i++) {
 		var volume = 0;
 		const lastEnergyChunk = (i-1)*chunk;
 		const chunkPart = energy - lastEnergyChunk;	
@@ -176,12 +181,22 @@ const setMusicChannelsVolume = function() {
 		else if(energy >= lastEnergyChunk) {
 			volume = chunkPart/chunk;
 		}
-		audioElements[i].volume = volume;
+		musicAudioElements[i].volume = volume;
 	}
 }
 
+const activateMusicChannel = function(index) {
+	if (index == activeMusicChannel || index > musicAudioElements.length-1) return;
+	activeMusicChannel = index;
+	for (var i = 0; i < musicAudioElements.length; i++) {
+		musicAudioElements[i].muted = true;
+	}
+	musicAudioElements[activeMusicChannel].muted = false;
+}
+
 const playMusicChannels = function(play) {
-	audioElements.forEach(audio => {
+	musicAudioElements.forEach(audio => {
+		audio.volume = 0.6;
 		if (play) audio.play()
 		else audio.stop()
 	});
@@ -190,6 +205,7 @@ const playMusicChannels = function(play) {
 const displayIntroScreen = function() {
 	energy = 0;
 	document.body.dataset.screen = "intro";
+	activateMusicChannel(0);
 }
 
 const startGame = function() {
@@ -205,6 +221,7 @@ const startGame = function() {
 	running = true;
 	if (mainNode) mainNode.remove();
 	createNode();
+	activateMusicChannel(0);
 }
 
 const displayOutroScreen = function() {
@@ -377,6 +394,7 @@ const Init = function() {
 				evt.target.remove();
 			} else {
 				energy = Math.max(0, energy - calculateShadeDamage());
+				new Audio("damage.mp3").play()
 				evt.target.classList.add("explode");
 			}
 		}
@@ -420,9 +438,11 @@ const onClick = function(evt) {
 	if (evt.target.classList.contains("blob") && !evt.target.classList.contains("acquire")) {
 		energy += calculateBlobEnergy();
 		evt.target.classList.add("acquire");
+		new Audio("blob.mp3").play()
 	} else if (evt.target.id == "train") {
 		const cost = calculateTrainCost();
 		if (energy < cost) return;
+		var a = new Audio("train.mp3"); a.volume = 0.7; a.playbackRate = 0.7 + Math.random() * 1; a.play();
 		energy -= cost;
 		if (currentOrbit.childElementCount >= currentOrbit.dataset.max) {
 			createOrbit(mainNode);
@@ -434,6 +454,7 @@ const onClick = function(evt) {
 	} else if (evt.target == upgradeSpeedButtonElm) {
 		const cost = calculateSpeedUpgradeCost();
 		if (energy < cost) return;
+		var a = new Audio("upgrade_speed.mp3"); a.volume = 0.7; a.playbackRate = 0.7 + Math.random() * 1; a.play();
 		speedUpgradeLevel++;
 		energy -= cost;
 		document.querySelectorAll(".satellite").forEach(satellite => {
@@ -444,12 +465,14 @@ const onClick = function(evt) {
 	} else if (evt.target == upgradeClickButtonElm) {
 		const cost = calculateClickUpgradeCost();
 		if (energy < cost) return;
+		var a = new Audio("upgrade_click.mp3"); a.volume = 0.7; a.playbackRate = 0.7 + Math.random() * 1; a.play();
 		clickUpgradeLevel++;
 		energy -= cost;
 		upgradeClickButtonBarElm.title = calculateSpeedUpgradeCost();
 	} else if (evt.target.classList.contains("shade")) {
+		const a = new Audio("click.mp3"); a.volume = 0.7; a.play();
 		const shadeContainer = evt.target.parentElement;
-		shadeContainer.dataset.hp = Math.max(0, parseFloat(shadeContainer.dataset.hp) - calculateClickDamage());
+		shadeContainer.dataset.hp = Math.round(Math.max(0, parseFloat(shadeContainer.dataset.hp) - calculateClickDamage()));
 		if (parseFloat(shadeContainer.dataset.hp) <= 0) {
 			evt.target.parentElement.classList.add("explode");
 		}
@@ -460,15 +483,7 @@ const onClick = function(evt) {
 }
 
 const tick = function() {
-	setMusicChannelsVolume();
 	if (running) {
-		// if (energy != displayedEnergy && energy > 0) {
-		// 	if (energy > displayedEnergy) displayedEnergy++;
-		// 	if (energy < displayedEnergy) displayedEnergy--;
-		// 	// progressElm.innerText = `${displayedEnergy}`;
-		// }
-
-	
 		const trainCost = calculateTrainCost();
 		const speedUpgradeCost = calculateSpeedUpgradeCost();
 		const clickUpgradeCost = calculateClickUpgradeCost();
@@ -482,6 +497,7 @@ const tick = function() {
 	
 	
 		if (energy < PHASE_1_THRESHOLD) {
+			activateMusicChannel(0);
 			// Phase 1, awakening
 			//document.title = "PHASE1: " + energy;
 			document.body.className = "phase1"
@@ -500,6 +516,7 @@ const tick = function() {
 			const progressText = `${Math.round(phaseProgress*100)}%`;
 			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 		} else if (energy >= PHASE_1_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD) {
+			activateMusicChannel(1);
 			// Phase 2, dancing
 			//document.title = "PHASE2: " + energy;
 			document.body.className = "phase2";
@@ -521,6 +538,7 @@ const tick = function() {
 			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 	
 		} else if (energy >= PHASE_1_THRESHOLD+PHASE_2_THRESHOLD && energy < PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
+			activateMusicChannel(3);
 			// Phase 3, Harvesting
 			//document.title = "PHASE3: " + energy;
 			document.body.className = "phase3"
@@ -543,6 +561,7 @@ const tick = function() {
 			if (progressElm.innerText != progressText) progressElm.innerText = progressText;
 	
 		} else if (energy >= PHASE_1_THRESHOLD+PHASE_2_THRESHOLD+PHASE_3_THRESHOLD) {
+			activateMusicChannel(4);
 			// Phase 4, Victory
 			running = false;
 			canSpawnShades = false;
